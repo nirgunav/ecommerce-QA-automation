@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from selenium import webdriver
@@ -14,48 +16,29 @@ def driver(request):
 
         options = Options()
 
-        # Start Chrome maximized
         options.add_argument("--start-maximized")
 
-        # Disable Chrome password manager
-        options.add_experimental_option(
-            "prefs",
-            {
-                "credentials_enable_service": False,
-                "profile.password_manager_enabled": False,
-                "profile.password_manager_leak_detection": False,
-            },
-        )
-
-        # Disable browser notifications
-        options.add_argument("--disable-notifications")
+        # GitHub Actions / CI environment
+        if os.getenv("GITHUB_ACTIONS") == "true":
+            options.add_argument("--headless=new")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--window-size=1920,1080")
 
         driver = webdriver.Chrome(options=options)
 
     else:
-
         raise ValueError(f"Unsupported browser: {BROWSER}")
 
     driver.implicitly_wait(IMPLICIT_WAIT)
 
     yield driver
 
-    # ========================================================
-    # TAKE SCREENSHOT WHEN TEST FAILS
-    # ========================================================
-
-    if hasattr(request.node, "rep_call"):
-
-        if request.node.rep_call.failed:
-
-            take_screenshot(driver, request.node.name)
+    # Take screenshot when test fails
+    if hasattr(request.node, "rep_call") and request.node.rep_call.failed:
+        take_screenshot(driver, request.node.name)
 
     driver.quit()
-
-
-# ========================================================
-# PYTEST REPORT HOOK
-# ========================================================
 
 
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)
