@@ -16,25 +16,43 @@ def driver(request):
 
         options = Options()
 
-        options.add_argument("--start-maximized")
+        # Normal browser window size
+        options.add_argument("--window-size=1920,1080")
 
-        # GitHub Actions / CI environment
+        # Disable Chrome password/security popups
+        options.add_experimental_option(
+            "prefs",
+            {
+                "credentials_enable_service": False,
+                "profile.password_manager_enabled": False,
+                "profile.password_manager_leak_detection": False,
+            },
+        )
+
+        # GitHub Actions
         if os.getenv("GITHUB_ACTIONS") == "true":
+
             options.add_argument("--headless=new")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--window-size=1920,1080")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--disable-extensions")
+
+        else:
+            # Windows local execution
+            options.add_argument("--start-maximized")
 
         driver = webdriver.Chrome(options=options)
 
     else:
+
         raise ValueError(f"Unsupported browser: {BROWSER}")
 
     driver.implicitly_wait(IMPLICIT_WAIT)
 
     yield driver
 
-    # Take screenshot when test fails
+    # Screenshot when test fails
     if hasattr(request.node, "rep_call") and request.node.rep_call.failed:
         take_screenshot(driver, request.node.name)
 

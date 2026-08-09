@@ -108,7 +108,12 @@ class CheckoutPage:
 
         self.driver.execute_script("arguments[0].click();", button)
 
-        self.wait.until(EC.url_contains("checkout-step-two.html"))
+        # Wait until checkout overview is loaded.
+        # We accept either the expected URL or the Finish button.
+        self.wait.until(
+            lambda driver: "checkout-step-two.html" in driver.current_url
+            or len(driver.find_elements(*self.FINISH_BUTTON)) > 0
+        )
 
     # ========================================================
     # CANCEL CHECKOUT
@@ -183,5 +188,4 @@ class CheckoutPage:
         button = self.wait.until(EC.element_to_be_clickable(self.BACK_HOME_BUTTON))
 
         button.click()
-
         self.wait.until(EC.url_contains("inventory.html"))
